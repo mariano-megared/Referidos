@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1923">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Referidos">
+<title>Referidos</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+  :root {
+    --navy: #0f1923;
+    --navy2: #162230;
+    --card: #1c2d3e;
+    --border: #243648;
+    --accent: #2a9d8f;
+    --accent2: #e9c46a;
+    --text: #e8edf2;
+    --muted: #6b8399;
+    --input-bg: #111e2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--navy);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 10% 10%, rgba(42,157,143,.10) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 90% 90%, rgba(233,196,106,.07) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .screen { display: none; position: relative; z-index: 1; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── WELCOME ── */
+  #welcome { min-height: 100vh; align-items: center; justify-content: center; padding: 32px 20px; }
+  .welcome-inner { width: 100%; max-width: 480px; text-align: center; }
+  .logo-mark {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; margin: 0 auto 28px;
+    box-shadow: 0 12px 40px rgba(42,157,143,.35);
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .welcome-inner h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 12vw, 72px);
+    letter-spacing: 4px; line-height: .9;
+    background: linear-gradient(135deg, var(--text) 40%, var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 10px;
+  }
+  .welcome-inner p { color: var(--muted); font-size: 15px; margin-bottom: 44px; }
+  .field-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--accent); text-align: left; margin-bottom: 8px;
+  }
+  .input-wrap { position: relative; margin-bottom: 20px; }
+  input[type=text], input[type=tel] {
+    width: 100%; background: var(--input-bg); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 14px 18px;
+    font-family: 'DM Sans', sans-serif; font-size: 16px; color: var(--text);
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(42,157,143,.18); }
+  input::placeholder { color: var(--muted); }
+  select {
+    width: 100%; background: var(--input-bg); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 14px 18px;
+    font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--text);
+    outline: none; appearance: none; cursor: pointer; transition: border-color .2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b8399' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 16px center; padding-right: 44px;
+  }
+  select:focus { border-color: var(--accent); }
+  select option { background: #1c2d3e; }
+  textarea {
+    width: 100%; background: var(--input-bg); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 14px 18px;
+    font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--text);
+    outline: none; resize: vertical; min-height: 80px; transition: border-color .2s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  .btn-primary {
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, var(--accent), #21867a);
+    border: none; border-radius: 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600; color: #fff;
+    cursor: pointer; letter-spacing: .5px;
+    transition: transform .15s, box-shadow .15s;
+    box-shadow: 0 6px 24px rgba(42,157,143,.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(42,157,143,.4); }
+  .btn-secondary {
+    padding: 12px 24px; background: transparent;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--muted);
+    cursor: pointer; transition: border-color .2s, color .2s;
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ── TOP BAR ── */
+  #app { min-height: 100vh; }
+  .top-bar {
+    background: rgba(15,25,35,.85); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border); padding: 0 20px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .top-bar-inner {
+    max-width: 760px; margin: 0 auto; height: 64px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .referrer-badge { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .referrer-avatar {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: var(--navy); flex-shrink: 0;
+  }
+  .referrer-info { min-width: 0; }
+  .referrer-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .referrer-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .counter-badge {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 6px 14px; text-align: center; flex-shrink: 0;
+  }
+  .counter-num { font-family: 'Bebas Neue', sans-serif; font-size: 26px; line-height: 1; color: var(--accent2); display: block; }
+  .counter-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .top-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .btn-icon {
+    width: 38px; height: 38px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: border-color .2s, background .2s;
+    font-size: 16px; color: var(--muted);
+  }
+  .btn-icon:hover { border-color: var(--accent); color: var(--text); background: var(--navy2); }
+  .btn-icon.onedrive-connected { border-color: #0078d4; color: #0078d4; }
+
+  /* ── NAV TABS ── */
+  .nav-tabs {
+    display: flex; max-width: 760px; margin: 0 auto;
+    padding: 0 20px; border-bottom: 1px solid var(--border);
+  }
+  .nav-tab {
+    padding: 12px 20px; background: transparent; border: none;
+    border-bottom: 2px solid transparent;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--muted);
+    cursor: pointer; transition: color .2s, border-color .2s; margin-bottom: -1px;
+  }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── FORM ── */
+  .form-section { max-width: 760px; margin: 0 auto; padding: 28px 20px 100px; }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 2px;
+    color: var(--muted); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  @media (max-width: 520px) { .form-grid { grid-template-columns: 1fr; } .form-grid .full { grid-column: 1; } }
+  .field-group { display: flex; flex-direction: column; }
+  .phone-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  @media (max-width: 520px) { .phone-group { grid-template-columns: 1fr; } }
+  .radio-group { display: flex; gap: 10px; }
+  .radio-opt { flex: 1; position: relative; }
+  .radio-opt input { display: none; }
+  .radio-opt label {
+    display: flex; align-items: center; justify-content: center; padding: 13px;
+    background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 12px;
+    cursor: pointer; font-size: 14px; font-weight: 500; transition: all .2s; gap: 6px;
+  }
+  .radio-opt input:checked + label { border-color: var(--accent2); background: rgba(233,196,106,.1); color: var(--accent2); }
+  .radio-opt.neg input:checked + label { border-color: #e63946; background: rgba(230,57,70,.1); color: #e63946; }
+
+  /* ── SAVE BAR ── */
+  .save-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    padding: 16px 20px;
+    background: linear-gradient(to top, var(--navy) 70%, transparent);
+    z-index: 50;
+  }
+  .save-bar-inner { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; }
+
+  /* ── LIST ── */
+  .search-wrap { max-width: 760px; margin: 0 auto; padding: 16px 20px 8px; position: relative; }
+  .search-wrap input { padding-left: 42px; font-size: 14px; }
+  .search-icon {
+    position: absolute; left: 36px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); font-size: 16px; pointer-events: none;
+  }
+  .filter-row {
+    max-width: 760px; margin: 0 auto; padding: 4px 20px 12px;
+    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .filter-pill {
+    padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+    background: transparent; color: var(--muted); font-size: 12px; font-weight: 500;
+    cursor: pointer; white-space: nowrap; font-family: 'DM Sans', sans-serif;
+    transition: all .2s; flex-shrink: 0;
+  }
+  .filter-pill.active, .filter-pill:hover { border-color: var(--accent); color: var(--text); background: rgba(42,157,143,.1); }
+  .list-items { max-width: 760px; margin: 0 auto; padding: 0 20px 100px; display: flex; flex-direction: column; gap: 10px; }
+  .empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
+  .empty-state .emoji { font-size: 48px; display: block; margin-bottom: 16px; }
+
+  /* ── CONTACT CARD ── */
+  .ref-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 0; overflow: hidden; transition: border-color .2s; }
+  .ref-card:hover { border-color: rgba(42,157,143,.4); }
+  .ref-card-header { display: flex; align-items: center; gap: 14px; padding: 14px 16px 10px; cursor: pointer; }
+  .ref-avatar { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 20px; flex-shrink: 0; }
+  .ref-card-info { flex: 1; min-width: 0; }
+  .ref-name { font-weight: 600; font-size: 16px; }
+  .ref-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .estado-pill { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; white-space: nowrap; letter-spacing: .5px; }
+  .call-area { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .call-btn {
+    display: flex; align-items: center; gap: 12px; padding: 11px 16px;
+    background: rgba(42,157,143,.1); border: 1.5px solid rgba(42,157,143,.25);
+    border-radius: 10px; text-decoration: none; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+    transition: background .2s, border-color .2s, transform .1s; cursor: pointer;
+  }
+  .call-btn:hover, .call-btn:active { background: rgba(42,157,143,.22); border-color: var(--accent); transform: scale(0.99); }
+  .call-btn .phone-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .call-btn .phone-label { font-size: 10px; color: var(--muted); display: block; }
+  .call-btn .phone-num { font-size: 15px; font-weight: 600; letter-spacing: .5px; }
+  .call-btn-arrow { margin-left: auto; color: var(--accent); font-size: 18px; }
+  .ref-card-footer { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px 12px; border-top: 1px solid var(--border); gap: 10px; }
+  .edit-btn-small { font-size: 12px; color: var(--muted); background: none; border: 1px solid var(--border); border-radius: 8px; padding: 5px 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: color .2s, border-color .2s; }
+  .edit-btn-small:hover { color: var(--text); border-color: var(--accent); }
+  .nota-badge { font-size: 11px; color: var(--muted); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
+
+  /* ── ONEDRIVE MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    display: flex; align-items: flex-end; justify-content: center;
+    z-index: 200; opacity: 0; pointer-events: none; transition: opacity .3s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-sheet {
+    background: var(--card); border-radius: 24px 24px 0 0;
+    width: 100%; max-width: 560px; padding: 28px 24px 40px;
+    border-top: 1px solid var(--border);
+    transform: translateY(40px); transition: transform .3s;
+  }
+  .modal-overlay.open .modal-sheet { transform: translateY(0); }
+  .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 20px; }
+  .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .od-status {
+    display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+    background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px;
+  }
+  .od-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .od-dot.connected { background: #0078d4; box-shadow: 0 0 8px rgba(0,120,212,.5); }
+  .od-dot.ok { background: var(--accent); box-shadow: 0 0 8px rgba(42,157,143,.5); }
+  .od-text { font-size: 14px; }
+  .od-text small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .btn-onedrive {
+    width: 100%; padding: 15px; border: none; border-radius: 12px;
+    background: #0078d4; color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s;
+    display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;
+  }
+  .btn-onedrive:hover { background: #106ebe; }
+  .btn-onedrive:disabled { background: #0d3d6e; color: #6b8399; cursor: not-allowed; }
+  .btn-onedrive.uploading { animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+  .modal-close { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px; background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; transition: color .2s, border-color .2s; }
+  .modal-close:hover { color: var(--text); border-color: var(--accent); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 90px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--accent); color: #fff; padding: 12px 24px;
+    border-radius: 100px; font-size: 14px; font-weight: 600;
+    opacity: 0; transition: all .3s; z-index: 999; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: #e63946; }
+</style>
+</head>
+<body>
+
+<!-- ══ WELCOME ══ -->
+<div id="welcome" class="screen active">
+  <div class="welcome-inner">
+    <div class="logo-mark">📋</div>
+    <h1>Referidos</h1>
+    <p>Ingresá el nombre de la persona que te pasó los contactos</p>
+    <div class="field-label">Referidos de…</div>
+    <div class="input-wrap">
+      <input type="text" id="referrer-input" placeholder="Nombre y apellido" autocomplete="off" />
+    </div>
+    <button class="btn-primary" onclick="startApp()">Comenzar →</button>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app" class="screen">
+
+  <div class="top-bar">
+    <div class="top-bar-inner">
+      <div class="referrer-badge">
+        <div class="referrer-avatar" id="referrer-avatar">?</div>
+        <div class="referrer-info">
+          <div class="referrer-label">Referidos de</div>
+          <div class="referrer-name" id="referrer-display">—</div>
+        </div>
+      </div>
+      <div class="counter-badge">
+        <span class="counter-num" id="counter">0</span>
+        <span class="counter-label">Cargados</span>
+      </div>
+      <div class="top-actions">
+        <button class="btn-icon" onclick="exportExcel()" title="Descargar Excel">📥</button>
+        <button class="btn-icon" onclick="exportAndOpenOneDrive()" title="Descargar y abrir OneDrive">☁️</button>
+        <button class="btn-icon" onclick="showChangeReferrer()" title="Cambiar referente">🔄</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab(event,'form')">➕ Nuevo referido</button>
+    <button class="nav-tab" onclick="switchTab(event,'list')">📋 Lista</button>
+  </div>
+
+  <!-- TAB FORM -->
+  <div id="tab-form" class="tab-content active">
+    <div class="form-section">
+      <div class="section-title">Datos personales</div>
+      <div class="form-grid">
+        <div class="field-group full">
+          <div class="field-label">Nombre y apellido *</div>
+          <input type="text" id="f-nombre" placeholder="Ej: Juan Pérez" />
+        </div>
+      </div>
+      <div class="section-title">Teléfonos</div>
+      <div class="phone-group">
+        <div class="field-group"><div class="field-label">Celular 1</div><input type="tel" id="f-cel1" placeholder="11 2345-6789" /></div>
+        <div class="field-group"><div class="field-label">Celular 2</div><input type="tel" id="f-cel2" placeholder="Opcional" /></div>
+        <div class="field-group"><div class="field-label">Celular 3</div><input type="tel" id="f-cel3" placeholder="Opcional" /></div>
+      </div>
+      <div class="section-title">Ubicación</div>
+      <div class="form-grid">
+        <div class="field-group"><div class="field-label">Barrio / Zona</div><input type="text" id="f-barrio" placeholder="Ej: Palermo" /></div>
+        <div class="field-group"><div class="field-label">Dirección</div><input type="text" id="f-dir" placeholder="Calle y número" /></div>
+      </div>
+      <div class="section-title">Seguimiento</div>
+      <div class="form-grid">
+        <div class="field-group">
+          <div class="field-label">Estado</div>
+          <select id="f-estado">
+            <option value="">— Elegir —</option>
+            <option value="No contactado">⚪ No contactado</option>
+            <option value="Semilla">🟡 Semilla</option>
+            <option value="Negativo">⚫ Negativo</option>
+            <option value="Coordinado">🔵 Coordinado</option>
+            <option value="Positivo">🟢 Positivo</option>
+            <option value="Contactado">✅ Contactado</option>
+            <option value="Recordar urgente">🔴 Recordar urgente</option>
+            <option value="Mensaje">🟣 Mensaje</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <div class="field-label">¿Vendí?</div>
+          <div class="radio-group">
+            <div class="radio-opt"><input type="radio" name="vendi" id="v-ok" value="OK"><label for="v-ok">✓ OK</label></div>
+            <div class="radio-opt neg"><input type="radio" name="vendi" id="v-no" value="No"><label for="v-no">✗ No</label></div>
+            <div class="radio-opt"><input type="radio" name="vendi" id="v-nd" value="" checked><label for="v-nd">— S/D</label></div>
+          </div>
+        </div>
+        <div class="field-group full">
+          <div class="field-label">Relación con el referido</div>
+          <input type="text" id="f-relacion" placeholder="Ej: amigo, vecino, compañero de trabajo…" />
+        </div>
+        <div class="field-group full"><div class="field-label">Nota</div><textarea id="f-nota" placeholder="Observaciones, recordatorios…"></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB LIST -->
+  <div id="tab-list" class="tab-content">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Buscar por nombre, barrio, teléfono…" oninput="renderList()" />
+    </div>
+    <div class="filter-row">
+      <button class="filter-pill active" onclick="setFilter(this,'')">Todos</button>
+      <button class="filter-pill" onclick="setFilter(this,'No contactado')">⚪ No contactado</button>
+      <button class="filter-pill" onclick="setFilter(this,'Semilla')">🟡 Semilla</button>
+      <button class="filter-pill" onclick="setFilter(this,'Negativo')">⚫ Negativo</button>
+      <button class="filter-pill" onclick="setFilter(this,'Coordinado')">🔵 Coordinado</button>
+      <button class="filter-pill" onclick="setFilter(this,'Positivo')">🟢 Positivo</button>
+      <button class="filter-pill" onclick="setFilter(this,'Contactado')">✅ Contactado</button>
+      <button class="filter-pill" onclick="setFilter(this,'Recordar urgente')">🔴 Urgente</button>
+      <button class="filter-pill" onclick="setFilter(this,'Mensaje')">🟣 Mensaje</button>
+    </div>
+    <div class="list-items" id="list-items">
+      <div class="empty-state"><span class="emoji">👤</span><p>Todavía no cargaste ningún referido.</p></div>
+    </div>
+  </div>
+
+  <div class="save-bar">
+    <div class="save-bar-inner">
+      <button class="btn-secondary" onclick="resetForm()">Limpiar</button>
+      <button class="btn-primary" style="flex:1" onclick="saveReferido()">Guardar referido</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+// CONFIGURACIÓN
+// ════════════════════════════════════════
+
+// ── ESTADO ──
+let referrer    = '';
+let referidos   = [];       // todos los referidos de la sesión (todos los referentes)
+let editingIndex = null;
+let activeFilter = '';
+
+const estadoStyles = {
+  'No contactado':    { color: '#aaa',    pill: '#3a3a3a' },
+  'Semilla':          { color: '#e9c46a', pill: '#7a6200' },
+  'Negativo':         { color: '#e63946', pill: '#7a0008' },
+  'Coordinado':       { color: '#74b5e0', pill: '#0d3d5e' },
+  'Positivo':         { color: '#70c36a', pill: '#0d4a28' },
+  'Contactado':       { color: '#2a9d8f', pill: '#0d4a44' },
+  'Recordar urgente': { color: '#ff6b6b', pill: '#7a0000' },
+  'Mensaje':          { color: '#c77dff', pill: '#4a1a70' },
+};
+
+// ── APP INIT ──
+function startApp() {
+  const val = document.getElementById('referrer-input').value.trim();
+  if (!val) { shake('referrer-input'); return; }
+  referrer = val;
+  updateTopBar();
+  switchScreen('app');
+  updateCounter();
+}
+
+function updateTopBar() {
+  document.getElementById('referrer-display').textContent = referrer;
+  document.getElementById('referrer-avatar').textContent = referrer.charAt(0).toUpperCase();
+}
+
+function showChangeReferrer() {
+  const name = prompt('Nombre del nuevo referente\n(los anteriores se mantienen en el Excel):', '');
+  if (name && name.trim()) {
+    referrer = name.trim();
+    updateTopBar();
+    updateCounter();
+    showToast(`Ahora cargando referidos de ${referrer}`);
+  }
+}
+
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function switchTab(ev, tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  ev.target.classList.add('active');
+  if (tab === 'list') renderList();
+}
+
+// ── FORM ──
+function getFormData() {
+  return {
+    nombre:     document.getElementById('f-nombre').value.trim(),
+    estado:     document.getElementById('f-estado').value,
+    referencia: referrer,   // siempre el referente actual, automático
+    relacion:   document.getElementById('f-relacion').value.trim(),
+    cel1:       document.getElementById('f-cel1').value.trim(),
+    cel2:       document.getElementById('f-cel2').value.trim(),
+    cel3:       document.getElementById('f-cel3').value.trim(),
+    barrio:     document.getElementById('f-barrio').value.trim(),
+    nota:       document.getElementById('f-nota').value.trim(),
+    vendi:      document.querySelector('input[name="vendi"]:checked')?.value || '',
+    direccion:  document.getElementById('f-dir').value.trim(),
+    referidoDe: referrer,
+  };
+}
+
+function fillForm(data) {
+  document.getElementById('f-nombre').value  = data.nombre    || '';
+  document.getElementById('f-estado').value  = data.estado    || '';
+  document.getElementById('f-relacion').value= data.relacion  || '';
+  document.getElementById('f-cel1').value    = data.cel1      || '';
+  document.getElementById('f-cel2').value    = data.cel2      || '';
+  document.getElementById('f-cel3').value    = data.cel3      || '';
+  document.getElementById('f-barrio').value  = data.barrio    || '';
+  document.getElementById('f-nota').value    = data.nota      || '';
+  document.getElementById('f-dir').value     = data.direccion || '';
+  const v = data.vendi || '';
+  document.querySelectorAll('input[name="vendi"]').forEach(r => { r.checked = r.value === v; });
+}
+
+function saveReferido() {
+  const data = getFormData();
+  if (!data.nombre) { shake('f-nombre'); showToast('⚠️ El nombre es obligatorio'); return; }
+  if (editingIndex !== null) {
+    referidos[editingIndex] = data;
+    editingIndex = null;
+    showToast('Referido actualizado ✓');
+  } else {
+    referidos.push(data);
+    showToast(`✓ Guardado — referido de ${referrer}`);
+  }
+  resetForm(); updateCounter(); renderList();
+}
+
+function resetForm() {
+  editingIndex = null;
+  ['f-nombre','f-relacion','f-cel1','f-cel2','f-cel3','f-barrio','f-nota','f-dir'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-estado').value = '';
+  document.getElementById('v-nd').checked = true;
+}
+
+function updateCounter() {
+  // Counter shows: referidos of current referrer / total
+  const currentCount = referidos.filter(r => r.referidoDe === referrer).length;
+  const totalCount   = referidos.length;
+  document.getElementById('counter').textContent = currentCount;
+  // Update counter label to show total if different
+  const label = document.querySelector('.counter-label');
+  if (label) label.textContent = totalCount > currentCount ? `de ${referrer.split(' ')[0]} (${totalCount} total)` : `de ${referrer.split(' ')[0]}`;
+}
+
+// ── LIST / CARDS ──
+function setFilter(btn, val) {
+  activeFilter = val;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+function renderList() {
+  const container = document.getElementById('list-items');
+  const query = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+  let items = referidos.map((r, i) => ({ ...r, _i: i }));
+  if (activeFilter) items = items.filter(r => r.estado === activeFilter);
+  if (query) items = items.filter(r =>
+    [r.nombre, r.cel1, r.cel2, r.cel3, r.barrio, r.direccion, r.nota, r.referencia]
+      .some(v => (v || '').toLowerCase().includes(query))
+  );
+  if (!referidos.length) { container.innerHTML = `<div class="empty-state"><span class="emoji">👤</span><p>Todavía no cargaste ningún referido.</p></div>`; return; }
+  if (!items.length) { container.innerHTML = `<div class="empty-state"><span class="emoji">🔍</span><p>No encontramos resultados.</p></div>`; return; }
+
+  container.innerHTML = items.map(r => {
+    const s = estadoStyles[r.estado] || { color: '#6b8399', pill: '#243648' };
+    const phones = [r.cel1?{num:r.cel1,label:'Celular 1'}:null, r.cel2?{num:r.cel2,label:'Celular 2'}:null, r.cel3?{num:r.cel3,label:'Celular 3'}:null].filter(Boolean);
+    const callBtns = phones.map(p => `
+      <a class="call-btn" href="tel:${p.num.replace(/\s|-/g,'')}">
+        <div class="phone-icon">📞</div>
+        <div><span class="phone-label">${p.label}</span><span class="phone-num">${p.num}</span></div>
+        <span class="call-btn-arrow">›</span>
+      </a>`).join('');
+    const noCel = phones.length === 0 ? `<div style="font-size:13px;color:var(--muted);padding:4px 0;">Sin teléfono cargado</div>` : '';
+    const pill = r.estado ? `<div class="estado-pill" style="background:${s.pill};color:${s.color}">${r.estado}</div>` : '';
+    const initials = r.nombre.split(' ').map(w=>w[0]).filter(Boolean).slice(0,2).join('').toUpperCase();
+    return `
+    <div class="ref-card">
+      <div class="ref-card-header" onclick="editReferido(${r._i})">
+        <div class="ref-avatar" style="background:${s.pill};color:${s.color}">${initials}</div>
+        <div class="ref-card-info">
+          <div class="ref-name">${r.nombre}</div>
+          <div class="ref-sub">${[r.barrio,r.relacion].filter(Boolean).join(' · ')||'—'}</div>
+        </div>
+        ${pill}
+      </div>
+      <div class="call-area">${callBtns}${noCel}</div>
+      <div class="ref-card-footer">
+        <button class="edit-btn-small" onclick="editReferido(${r._i})">✏️ Editar</button>
+        ${r.nota?`<span class="nota-badge">📝 ${r.nota}</span>`:''}
+        ${r.vendi?`<span style="font-size:12px">${r.vendi==='OK'?'✅ Vendido':'❌ No vendido'}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editReferido(i) {
+  editingIndex = i;
+  fillForm(referidos[i]);
+  document.querySelectorAll('.nav-tab')[0].dispatchEvent(new MouseEvent('click'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-form').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab')[0].classList.add('active');
+  window.scrollTo(0,0);
+  showToast('Editando — guardá para confirmar');
+}
+
+// ── EXCEL ──
+// Nombre de archivo fijo para que siempre se "actualice" el mismo
+const XLSX_FILENAME = 'Referidos.xlsx';
+
+function buildXlsx() {
+  const headers = ['Nombre y Apellido','Referido de','Estado','Relación con referido',
+    'Celular 1','Celular 2','Celular 3','Barrio / Zona','Nota','¿Vendí?','Dirección'];
+
+  // Agrupar por referente, ordenados por orden de aparición
+  const grupos = {};
+  const orden  = [];
+  referidos.forEach(r => {
+    if (!grupos[r.referidoDe]) { grupos[r.referidoDe] = []; orden.push(r.referidoDe); }
+    grupos[r.referidoDe].push(r);
+  });
+
+  const aoa = [headers];
+  orden.forEach((ref, gi) => {
+    // Fila separadora de grupo (excepto el primero si es el único)
+    if (gi > 0) aoa.push(Array(headers.length).fill(''));
+    // Encabezado de grupo
+    aoa.push([`── Referidos de: ${ref} (${grupos[ref].length}) ──`, ...Array(headers.length - 1).fill('')]);
+    grupos[ref].forEach(r => {
+      aoa.push([r.nombre, r.referidoDe, r.estado, r.relacion,
+        r.cel1, r.cel2, r.cel3, r.barrio, r.nota, r.vendi, r.direccion]);
+    });
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [26,20,18,22,14,14,14,18,26,10,26].map(w=>({wch:w}));
+
+  // Style header row
+  const hFill = { patternType:'solid', fgColor:{rgb:'1F3864'} };
+  const hFont = { bold:true, color:{rgb:'FFFFFF'}, name:'Arial', sz:11 };
+  headers.forEach((_,ci) => {
+    const addr = XLSX.utils.encode_cell({r:0,c:ci});
+    if (ws[addr]) ws[addr].s = { fill:hFill, font:hFont, alignment:{horizontal:'center'} };
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Referidos');
+
+  // One sheet per referrer
+  orden.forEach(ref => {
+    const sheetRows = [headers, ...grupos[ref].map(r =>
+      [r.nombre, r.referidoDe, r.estado, r.relacion, r.cel1, r.cel2, r.cel3, r.barrio, r.nota, r.vendi, r.direccion]
+    )];
+    const ws2 = XLSX.utils.aoa_to_sheet(sheetRows);
+    ws2['!cols'] = [26,20,18,22,14,14,14,18,26,10,26].map(w=>({wch:w}));
+    const safeName = ref.replace(/[:\\\/\?\*\[\]]/g,'').slice(0,30);
+    XLSX.utils.book_append_sheet(wb, ws2, safeName);
+  });
+
+  return wb;
+}
+
+function exportExcel() {
+  if (!referidos.length) { showToast('⚠️ No hay referidos para exportar'); return; }
+  XLSX.writeFile(buildXlsx(), XLSX_FILENAME);
+  // Summary toast
+  const grupos = {};
+  referidos.forEach(r => { grupos[r.referidoDe] = (grupos[r.referidoDe]||0)+1; });
+  const resumen = Object.entries(grupos).map(([k,v])=>`${k.split(' ')[0]}: ${v}`).join(', ');
+  showToast(`📥 Referidos.xlsx — ${resumen}`);
+}
+
+// ── ONEDRIVE: descarga el Excel y abre OneDrive ──
+function exportAndOpenOneDrive() {
+  if (!referidos.length) { showToast('⚠️ No hay referidos para exportar'); return; }
+  exportExcel();
+  setTimeout(() => {
+    window.open('https://onedrive.live.com', '_blank');
+    showToast('☁️ Abrí OneDrive y subí el archivo descargado');
+  }, 800);
+}
+
+// ── UTILS ──
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+function shake(id) {
+  const el = document.getElementById(id);
+  el.style.borderColor = '#e63946';
+  setTimeout(() => el.style.borderColor = '', 1200);
+}
+
+// ── PWA ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ── ENTER on welcome ──
+document.getElementById('referrer-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startApp();
+});
+</script>
+</body>
+</html>
